@@ -6,6 +6,26 @@ import json
 
 app = Flask(__name__)
 
+def calculatePoints(data):
+    previous_user_total = 0
+    points = 100
+    isCompetitor = False
+    if data['Vendor'] == 'pitney bowes':
+        points += 10
+    else:
+        points += 50
+        isCompetitor = True
+    
+    return {
+                'PreviousTotal': previous_user_total,
+                'PointsGained': points,
+                'CompetitorLabel': isCompetitor
+                }
+
+    
+    
+
+
 @app.route('/', methods = ['POST'])
 def index():
     file = request.files['file'] #Retrieve File
@@ -24,8 +44,20 @@ def index():
 
     shipping_info_command = "curl -G --data-urlencode \"data={}\" -d \"b64encoded=true\" -H \'x-api-key: Raqp2gTzJJ6JUQwPMAFa59BEPg9nofnN7V9nzCxf\' -H \"Authorization: Bearer {}\" \"https://preprod.pbtrack-test.com/decoder/v1/decode\"".format(photo_binary, token)
     shippingData = subprocess.check_output(shipping_info_command, shell=True)
-    return json.loads(shippingData)
+    
+    os.system("sudo rm /var/www/html/flaskAPI/barcode_decoder/{}".format(file_name))
+
+    
+    # fields = ['Vendor', 'Postage Value']
+
+    newData = json.loads(shippingData)
+    # for obj in newData.copy():
+    #     if obj not in fields:
+    #         newData.pop(obj)
+    point_response = calculatePoints(newData)
+
+    return point_response
+
 
 if __name__ == '__main__':
   app.run(host='0.0.0.0', port=80, threaded=True)
-
